@@ -33,16 +33,16 @@ server.get('/', (req, res) => {
 });
 
 server.post('/register', (req, res) => {
-  const credentials = req.body;
+  const credentials = req.body; // store body of post req un credentials var
   // hash the password
-  const hash = bcrypt.hashSync(credentials.password, 14) // 2^14 times
-  credentials.password= hash;
+  const hash = bcrypt.hashSync(credentials.password, 14) // 2^14 times, hash the pw
+  credentials.password= hash; // store hashed pw on credentials
   // save user
   db('users')
   .insert(credentials)
   .then(ids => {
     const id = ids[0];
-    req.session.username = user.username // save that session, i want to put a username in that session
+    req.session.username = credentials.username // save that session, i want to put a username in that session
     res.status(201).json({ newUserId: id})
   })
   .catch(err => {
@@ -78,6 +78,20 @@ server.get('/api/users', protected, (req, res) => {
     })
     .catch(err => res.send(err));
 });
+
+// LOGOUT 
+server.get('/logout', (req,res) => {
+  if(req.session) {
+    req.session.destroy(err => {
+      if (err) {
+        res.send('you cant leave!')
+      } else {
+        res.send('good bye!')
+      }
+    })
+  }
+
+})
 
 function protected(req, res, next) {
   if (req.session && req.session.username) {
