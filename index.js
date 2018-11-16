@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
+const KnexSessionStore = require('connect-session-knex')(session); // constructor = uppercase
+
 
 const db = require('./database/dbConfig.js');
 
@@ -16,10 +18,16 @@ const sessionConfig = {
   saveUninitialized: false, // laws!
   cookie: {
     secure: false,// restrict so a cookie is only saved when it is secured - https : put true. but we use false to test
-    maxAge: 1000 * 60 * 1 // 1 minute, when it expires. hey, your session expired! -- this is it
-    
+    maxAge: 1000 * 60 * 10 // 1 minute, when it expires. hey, your session expired! -- this is it
+  },
+  store: new KnexSessionStore ({
+    tablename: 'session',
+    sidfield: 'sid', //sessionid
+    knex: db,
+    createtable: true,
+    clearInterval: 1000 * 60 * 60, // how long to wait before pkg check db and delete, every hour clean up
 
-  }
+  })
 }
 
 
