@@ -75,6 +75,7 @@ server.get('/users', protected, (req, res) => {
 });
 
 function protected(req, res, next) {
+  // authentication tokens are normally sent as header instead of body
   const token = req.headers.authorization;
   if (token) {
     jwt.verify(token, jwtSecret, (err, decodedToken) => {
@@ -83,8 +84,8 @@ function protected(req, res, next) {
         res.status(401).json({ message: 'Invalid token'});
       } else {
         // token is valid
-        next();
-        req.decodedToken = decodedToken;
+        next(); 
+        req.decodedToken = decodedToken; // any subsequent middleware of route handler have access to this
         next();
       }
     })
