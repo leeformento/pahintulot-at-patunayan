@@ -53,7 +53,7 @@ server.post('/login', (req, res) => {
     .then(user => {
       if (user && bcrypt.compareSync(creds.password, user.password)) {
         const token = generateToken(user)
-        res.status(200).json({ welcome: user.username });
+        res.status(200).json({ welcome: user.username, token });
       } else {
         res.status(401).json({ message: 'you shall not pass!' });
       }
@@ -65,6 +65,7 @@ server.post('/login', (req, res) => {
 
 // protect this route, only authenticated users should see it
 server.get('/users', protected, (req, res) => {
+  console.log('\n*** decoded token info **\n', req.decodedToken);
   db('users')
     .select('id', 'username', 'password')
     .then(users => {
@@ -74,12 +75,21 @@ server.get('/users', protected, (req, res) => {
 });
 
 function protected(req, res, next) {
+  const token = req.headers.authorization;
   if (token) {
-    jwt.verify(token, secret, (err, decodedToken) => {
-
+    jwt.verify(token, jwtSecret, (err, decodedToken) => {
+      if (err) {
+        // token verification failed
+        res.status(401).json({ message: 'Invalid token'});
+      } else {
+        // token is valid
+        next();
+        req.decodedToken = decodedToken;
+        next();
+      }
     })
   } else {
-    res.status(401).json({ message: 'Not authorized' });
+    res.status(401).json({ message: 'No token provided' });
   }
 }
 
