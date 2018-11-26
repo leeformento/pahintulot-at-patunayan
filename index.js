@@ -37,10 +37,10 @@ function generateToken(user) {
   const jwtPayload = {
     ...user,
     hello: 'Lee',
-    role: 'admin'
+    roles: ['admin', 'root']
   }
   const jwtOptions = {
-    expiresIn: '3m'
+    expiresIn: '1hr'
   }
   return jwt.sign(jwtPayload, jwtSecret, jwtOptions)
 }
@@ -64,8 +64,7 @@ server.post('/login', (req, res) => {
 });
 
 // protect this route, only authenticated users should see it
-server.get('/users', protected, (req, res) => {
-  console.log('\n*** decoded token info **\n', req.decodedToken);
+server.get('/users', protected, checkRole('admin'), (req, res) => {
   db('users')
     .select('id', 'username', 'password')
     .then(users => {
@@ -84,13 +83,23 @@ function protected(req, res, next) {
         res.status(401).json({ message: 'Invalid token'});
       } else {
         // token is valid
-        next(); 
         req.decodedToken = decodedToken; // any subsequent middleware of route handler have access to this
+        console.log('\n*** decoded token info **\n', req.decodedToken);
         next();
       }
     })
   } else {
     res.status(401).json({ message: 'No token provided' });
+  }
+}
+
+function checkRole(role) {
+  return function(req,res,next) {
+    if (req.decodedToken && req.decodedToken.roles.includes(role)) {
+      next();
+    } else {
+      res.status(403).json({message: 'Forbidden'})
+    }
   }
 }
 
