@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
@@ -13,7 +14,7 @@ server.get('/', (req, res) => {
   res.send('Its Alive!');
 });
 
-server.post('/register', (req, res) => {
+server.post('/api/register', (req, res) => {
   const credentials = req.body;
   // hash the password
   const hash = bcrypt.hashSync(credentials.password, 14) // 2^14 times
@@ -31,7 +32,7 @@ server.post('/register', (req, res) => {
 
 })
 
-const jwtSecret = 'nobody tosses a dwarf!';
+const jwtSecret = process.env.JWT_SECRET || 'Add secret to .env with this key';
 
 function generateToken(user) {
   const jwtPayload = {
@@ -42,10 +43,11 @@ function generateToken(user) {
   const jwtOptions = {
     expiresIn: '1hr'
   }
+  console.log('token from process.env', jwtSecret)
   return jwt.sign(jwtPayload, jwtSecret, jwtOptions)
 }
 
-server.post('/login', (req, res) => {
+server.post('/api/login', (req, res) => {
   const creds = req.body;
   db('users')
     .where({ username: creds.username })
@@ -64,7 +66,7 @@ server.post('/login', (req, res) => {
 });
 
 // protect this route, only authenticated users should see it
-server.get('/users', protected, checkRole('admin'), (req, res) => {
+server.get('/api/users', protected, checkRole('admin'), (req, res) => {
   db('users')
     .select('id', 'username', 'password')
     .then(users => {
@@ -103,4 +105,5 @@ function checkRole(role) {
   }
 }
 
-server.listen(3300, () => console.log('\nrunning on port 3300\n'));
+const port = process.env.PORT || 3300;
+server.listen(port, () => console.log('\nrunning on port 3300\n'));
